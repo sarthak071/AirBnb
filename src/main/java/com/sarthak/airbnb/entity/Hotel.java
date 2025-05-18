@@ -42,4 +42,7 @@ public class Hotel {
 
     @OneToMany(mappedBy = "hotel", fetch = FetchType.EAGER)
     private List<Room> rooms;
+
+    @ManyToOne
+    private User owner;
 }

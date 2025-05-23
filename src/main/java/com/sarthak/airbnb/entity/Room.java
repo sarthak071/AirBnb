@@ -1,5 +1,6 @@
 package com.sarthak.airbnb.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -19,6 +20,7 @@ public class Room {
 
     @ManyToOne
     @JoinColumn(name = "hotel_id", nullable = false)
+//    @JsonIgnore Not sending Hotel while getting room
     private Hotel hotel;
 
     @Column(nullable = false)

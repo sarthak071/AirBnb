@@ -1,12 +1,10 @@
 package com.sarthak.airbnb.service;
 
-import com.sarthak.airbnb.dto.BookingDto;
-import com.sarthak.airbnb.dto.BookingRequestDto;
-import com.sarthak.airbnb.dto.GuestDto;
+import com.sarthak.airbnb.dto.*;
 import com.stripe.model.Event;
 
+import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
 
 public interface BookingService {
     BookingDto initialiseBooking(BookingRequestDto bookingRequestDto);
@@ -20,4 +18,10 @@ public interface BookingService {
     void cancelBooking(Long bookingId);
 
     String getBookingStatus(Long bookingId);
+
+    List<BookingDto> getAllBookingByHotelId(Long hotelId);
+
+    HotelReportDto getHotelReport(Long hotelId, LocalDate startDate, LocalDate endDate);
+
+    List<BookingDto> getMyBookings();
 }

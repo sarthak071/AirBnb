@@ -1,8 +1,6 @@
 package com.sarthak.airbnb.service;
 
-import com.sarthak.airbnb.dto.BookingDto;
-import com.sarthak.airbnb.dto.BookingRequestDto;
-import com.sarthak.airbnb.dto.GuestDto;
+import com.sarthak.airbnb.dto.*;
 import com.sarthak.airbnb.entity.*;
 import com.sarthak.airbnb.entity.enums.BookingStatus;
 import com.sarthak.airbnb.exceptions.ResourceNotFoundException;
@@ -13,21 +11,26 @@ import com.stripe.exception.StripeException;
 import com.stripe.model.Event;
 import com.stripe.model.Refund;
 import com.stripe.model.checkout.Session;
-import com.stripe.net.ApiResource;
 import com.stripe.param.RefundCreateParams;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.springframework.security.access.AccessDeniedException;
+
+import static com.sarthak.airbnb.util.AppUtils.getCurrentUser;
 
 @Service
 @Slf4j
@@ -234,12 +237,54 @@ public class BookingServiceImpl implements BookingService{
         return booking.getBookingStatus().name();
     }
 
+    @Override
+    public List<BookingDto> getAllBookingByHotelId(Long hotelId) {
+        Hotel hotel=hotelRepository.findById(hotelId).orElseThrow(()->new ResourceNotFoundException("Hotel not found with Id: "+hotelId));
+        User user=getCurrentUser();
+
+        log.info("Getting all bookings with hotel id {}",hotelId);
+        if(!user.equals(hotel.getOwner())) throw new AccessDeniedException("You are not the owner of hotel with hotelid: "+hotelId);
+        List<Booking> bookings = bookingRepository.findByHotel(hotel);
+        return bookings.stream().map(booking -> modelMapper.map(booking,BookingDto.class))
+                .collect(Collectors.toList());
+
+
+    }
+
+    @Override
+    public HotelReportDto getHotelReport(Long hotelId, LocalDate startDate, LocalDate endDate) {
+        Hotel hotel=hotelRepository.findById(hotelId).orElseThrow(()->new ResourceNotFoundException("Hotel not found with Id: "+hotelId));
+        User user=getCurrentUser();
+
+        log.info("Generating Report all books with hotel id {}",hotelId);
+        if(!user.equals(hotel.getOwner())) throw new AccessDeniedException("You are not the owner of hotel with hotel id: "+hotelId);
+        LocalDateTime startDateTime = startDate.atStartOfDay();
+        LocalDateTime endDateTime = endDate.atTime(LocalTime.MAX);
+
+        List<Booking> bookings = bookingRepository.findByHotelAndCreatedAtBetween(hotel,startDateTime,endDateTime);
+        Long totalConfirmedBookings = bookings.stream().filter(booking -> booking.getBookingStatus() == BookingStatus.CONFIRMED)
+                .count();
+
+        BigDecimal totalRevenueOfConfirmedBookings = bookings.stream().
+                filter(booking -> booking.getBookingStatus() == BookingStatus.CONFIRMED)
+                .map(Booking::getAmount)
+                .reduce(BigDecimal.ZERO , BigDecimal::add);
+
+        BigDecimal avgRevenue = totalRevenueOfConfirmedBookings.divide(BigDecimal.valueOf(totalConfirmedBookings), RoundingMode.HALF_UP);
+
+        return new HotelReportDto(totalConfirmedBookings,totalRevenueOfConfirmedBookings,avgRevenue);
+    }
+
+    @Override
+    public List<BookingDto> getMyBookings() {
+        User user = getCurrentUser();
+        return bookingRepository.findByUser(user).stream()
+                .map(booking -> modelMapper.map(booking,BookingDto.class))
+                .collect(Collectors.toList());
+    }
+
     private boolean hasBookingExpired(Booking booking){
         return  booking.getCreatedAt().plusMinutes(10).isBefore(LocalDateTime.now());
     }
 
-    public User getCurrentUser(){
-
-        return (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-    }
 }

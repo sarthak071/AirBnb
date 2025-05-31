@@ -1,5 +1,6 @@
 package com.sarthak.airbnb.service;
 
+import com.sarthak.airbnb.dto.HotelDto;
 import com.sarthak.airbnb.dto.RoomDto;
 import com.sarthak.airbnb.entity.Hotel;
 import com.sarthak.airbnb.entity.Room;
@@ -18,6 +19,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static com.sarthak.airbnb.util.AppUtils.getCurrentUser;
+import static org.springframework.data.jpa.domain.AbstractPersistable_.id;
 
 @Service
 @RequiredArgsConstructor
@@ -81,6 +85,27 @@ public class RoomServiceImpl implements RoomService{
         }
         inventoryService.deleteAllInventories(room);
         roomRepository.deleteById(roomId);
+    }
+
+    @Override
+    @Transactional
+    public RoomDto updateRoomById(Long hotelId, Long roomId, RoomDto roomDto) {
+        log.info("Updating a room with id: {}",roomId);
+        Hotel hotel =hotelRepository
+                .findById(hotelId)
+                .orElseThrow(() ->new ResourceNotFoundException("Hotel not found with id ${id} : "+id));
+        checkUser(hotel);
+
+        Room room = roomRepository.findById(roomId)
+                        .orElseThrow(()-> new ResourceNotFoundException("Room not found with id : "+ roomId));
+        modelMapper.map(roomDto,room);
+        room.setId(roomId);
+
+        //TODO if price or inventory update, update inventory for this room
+
+        room = roomRepository.save(room);
+        return  modelMapper.map(room,RoomDto.class);
+
     }
 
     void checkUser(Hotel hotel){

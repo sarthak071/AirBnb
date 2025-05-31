@@ -1,5 +1,6 @@
 package com.sarthak.airbnb.entity;
 
+import com.sarthak.airbnb.entity.enums.Gender;
 import com.sarthak.airbnb.entity.enums.Role;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
@@ -9,6 +10,8 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -26,7 +29,6 @@ public class User implements UserDetails {
     private Long id;
 
 
-
     @Override
     public int hashCode() {
         return Objects.hashCode(id);
@@ -39,6 +41,11 @@ public class User implements UserDetails {
     private String password;
 
     private String name;
+
+    private LocalDate dateOfBirth;
+
+    @Enumerated(EnumType.STRING)
+    private Gender gender;
 
     @ElementCollection(fetch = FetchType.EAGER)
     @Enumerated(EnumType.STRING)

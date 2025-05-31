@@ -1,5 +1,6 @@
 package com.sarthak.airbnb.service;
 
+import com.sarthak.airbnb.dto.BookingDto;
 import com.sarthak.airbnb.dto.HotelDto;
 import com.sarthak.airbnb.dto.HotelInfoDto;
 import com.sarthak.airbnb.dto.RoomDto;
@@ -8,17 +9,22 @@ import com.sarthak.airbnb.entity.Room;
 import com.sarthak.airbnb.entity.User;
 import com.sarthak.airbnb.exceptions.ResourceNotFoundException;
 import com.sarthak.airbnb.exceptions.UnAuthorizedException;
+import com.sarthak.airbnb.repository.BookingRepository;
 import com.sarthak.airbnb.repository.HotelRepository;
 import com.sarthak.airbnb.repository.RoomRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import org.modelmapper.ModelMapper;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import static com.sarthak.airbnb.util.AppUtils.getCurrentUser;
+
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -105,6 +111,20 @@ public class HotelServiceImpl implements HotelService{
         List<RoomDto> rooms = hotel.getRooms().stream().map(room -> modelMapper.map(room,RoomDto.class)).toList();
         return new HotelInfoDto(modelMapper.map(hotel,HotelDto.class),rooms);
     }
+
+    @Override
+    public List<HotelDto> getAllHotels() {
+
+        User user = getCurrentUser();
+        log.info("Getting all hotels for the admin with id : {}",user.getId());
+        List<Hotel> hotels = hotelRepository.findByOwner(user);
+        return  hotels
+                .stream()
+                .map((element)->modelMapper.map(element,HotelDto.class))
+                .collect(Collectors.toList());
+    }
+
+
 
     void checkUser(Hotel hotel){
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();

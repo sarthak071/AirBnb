@@ -1,6 +1,7 @@
 package com.sarthak.airbnb.advice;
 
 import com.sarthak.airbnb.exceptions.ResourceNotFoundException;
+import com.sarthak.airbnb.exceptions.UnAuthorizedException;
 import io.jsonwebtoken.JwtException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -69,6 +70,15 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiResponse<?>> handleAccessDeniedException(AccessDeniedException ex) {
+        ApiError apiError = ApiError.builder()
+                .status(HttpStatus.FORBIDDEN)
+                .message(ex.getMessage())
+                .build();
+        return buildErrorResponseEntity(apiError);
+    }
+
+    @ExceptionHandler(UnAuthorizedException.class)
+    public ResponseEntity<ApiResponse<?>> handleUnauthorizedException(UnAuthorizedException ex) {
         ApiError apiError = ApiError.builder()
                 .status(HttpStatus.FORBIDDEN)
                 .message(ex.getMessage())
